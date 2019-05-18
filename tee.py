@@ -32,6 +32,7 @@ def test1():
 def exec_with_split(cmd, **kwargs):
   filename = kwargs.get('filename', '')
   tail     = kwargs.get('tail', True)
+  no_ascii = kwargs.get("no_ascii", False)
   retcode  = None
   co_procs = []
 
@@ -51,6 +52,8 @@ def exec_with_split(cmd, **kwargs):
           pass
       if filename:
         shutil.copy(fd.name, filename)
+    if filename and no_ascii:
+      subprocess.call(['sed', '-i', 's,\\x1B\[[0-9;]*[a-zA-Z],,g', filename])
   return retcode
 
 
@@ -61,7 +64,7 @@ def test2():
   exec_with_split(cmd, filename="mycopy.txt")
 
   print("Run no tail")
-  exec_with_split(cmd, filename="mycopy2.txt", tail=False)
+  exec_with_split(cmd, filename="mycopy2.txt", tail=False, no_ascii=True)
 
 if __name__ == "__main__":
     if 0:

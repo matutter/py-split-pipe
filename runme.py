@@ -7,7 +7,7 @@ sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
 
 count = 3
 while 1:
-  sys.stdout.write("I am stdout %s\n" % count)
+  sys.stdout.write( "\033[94m"+  "I am stdout %s \033[0m\n" % count)
   sys.stderr.write("I am stderr %s\n" % count)
   count -= 1
   if count <= 0:
