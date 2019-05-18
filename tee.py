@@ -11,21 +11,6 @@ def clean(*args):
         pass
   print('Deleted: ' + ', '.join(deleted))
 
-# From SO, kinda sucks but the idea of running `tee`
-# in parallel is a simple solution
-def test1():
-
-    # Unbuffer output (this ensures the output is in the correct order)
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-    tee = subprocess.Popen(["tee", "copy.txt"], stdin=subprocess.PIPE)
-    # Writing to stderr or stdout pipes to tee.stdin
-    os.dup2(tee.stdin.fileno(), sys.stdout.fileno())
-    os.dup2(tee.stdin.fileno(), sys.stderr.fileno())
-
-    cmd = ['cat', 'sample.txt']
-    subprocess.call(cmd, stdout=tee.stdin, stderr=tee.stdin)
-    subprocess.call(['node', 'test.js'], stdout=tee.stdin, stderr=tee.stdin)
-
 # Own version, runs `tail` on a tempfile
 # will copy to other file if kwarg `filename` is specified
 # and will cleanup tempfile
@@ -56,8 +41,7 @@ def exec_with_split(cmd, **kwargs):
       subprocess.call(['sed', '-i', 's,\\x1B\[[0-9;]*[a-zA-Z],,g', filename])
   return retcode
 
-
-def test2():
+if __name__ == "__main__":
   clean('mycopy*')
   cmd = ['python', 'runme.py']
   print("Run with tail")
@@ -65,9 +49,3 @@ def test2():
 
   print("Run no tail")
   exec_with_split(cmd, filename="mycopy2.txt", tail=False, no_ascii=True)
-
-if __name__ == "__main__":
-    if 0:
-        test1()
-    if 1:
-        test2()
