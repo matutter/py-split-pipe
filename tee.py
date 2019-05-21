@@ -1,4 +1,5 @@
 import subprocess, os, sys, tempfile, shutil, glob
+from subprocess import Popen
 
 def clean(*args):
   deleted = []
@@ -15,18 +16,23 @@ def clean(*args):
 # will copy to other file if kwarg `filename` is specified
 # and will cleanup tempfile
 def exec_with_split(cmd, **kwargs):
-  filename = kwargs.get('filename', '')
+  filename = kwargs.get('filename', None)
   tail     = kwargs.get('tail', True)
   no_ascii = kwargs.get("no_ascii", False)
+  buffered = kwargs.get("buffered", False)
   retcode  = None
   co_procs = []
+  wrapper_cmd = []
+
+  if buffered:
+    wrapper_cmd.extend(["stdbuf", "-oL"])
 
   with tempfile.NamedTemporaryFile("wb") as fd:
-    if tail:
-      co_procs.append(
-        subprocess.Popen(["tail", "-f", fd.name], stdout=sys.stdout, stderr=sys.stderr))
     try:
-      proc = subprocess.Popen(cmd, stdout=fd, stderr=fd)
+      proc = Popen(wrapper_cmd + cmd, stdout=fd, stderr=fd)
+      if tail:
+        tail_cmd = ["tail", "-f", fd.name, '--pid', str(proc.pid)]
+        co_procs.append(Popen(tail_cmd, stdout=sys.stdout, stderr=sys.stderr))
       proc.wait()
       retcode = proc.returncode
     finally:
@@ -35,7 +41,7 @@ def exec_with_split(cmd, **kwargs):
           if proc.poll() == None: proc.terminate()
         except:
           pass
-      if filename:
+      if filename and filename != fd.name:
         shutil.copy(fd.name, filename)
     if filename and no_ascii:
       subprocess.call(['sed', '-i', 's,\\x1B\[[0-9;]*[a-zA-Z],,g', filename])
@@ -45,7 +51,7 @@ if __name__ == "__main__":
   clean('mycopy*')
   cmd = ['python', 'runme.py']
   print("Run with tail")
-  exec_with_split(cmd, filename="mycopy.txt")
+  exec_with_split(cmd, filename="mycopy.txt", buffered=True)
 
   print("Run no tail")
   exec_with_split(cmd, filename="mycopy2.txt", tail=False, no_ascii=True)
